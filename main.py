@@ -1,13 +1,14 @@
 # redis://default:redispw@localhost:32768
 import redis
 import discord
-from bot_token import API_TOKEN
 from discord.ext import commands
-    
+from bot_token import API_TOKEN
+from db import create_user, get_games_list
+
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='>', intents=intents)
-
 r = redis.Redis(host='localhost', 
                 port=32768, 
                 db=0, 
@@ -16,12 +17,13 @@ r = redis.Redis(host='localhost',
                 decode_responses=True,
                 charset="utf-8")
 
-accounts = ['Genshin Impact', 'Minecraft', 'brawl stars']
 
-
+r.delete('state')
 @bot.command(name='sell')
 async def test(ctx):
     r.set('state', 'sell-description')
+    nikname = ctx.author.name + '#' + ctx.author.discriminator
+    create_user(nikname, 1)
     await ctx.send('В какой игре вы хотите продать аккаунт?')
     
 
@@ -30,6 +32,7 @@ async def on_message(message):
     if message.author == bot.user:
         return
     if r.get('state') == 'sell-description':
+        accounts = get_games_list()
         for account in accounts:
             if message.content == account:
                 await message.channel.send('Введите описание')   
